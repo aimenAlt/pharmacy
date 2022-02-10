@@ -8,8 +8,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetFactory;
+import javax.sql.rowset.RowSetProvider;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 
 
 @Controller    
@@ -75,7 +80,7 @@ public class ControllerPrescription {
 	 * 5.  or if there is an error show the form with an error message.
 	 */
 	@PostMapping("/prescription/fill")
-	public String processFillForm(Prescription p, Model model) {
+	public String processFillForm(Prescription p, Model model) throws SQLException {
 
 
 		// TODO  
@@ -84,18 +89,47 @@ public class ControllerPrescription {
 		 * replace the following with code to validate the updated prescription data
 		 * and update database.
 		 */
- 
+		String insertPharmacyQuery = "INSERT INTO pharmacy (pharmacy_name, pharmacy_address) VALUES (?,?)";
+		ArrayList<Object> insertPharmacyVars = new ArrayList<>();
+		insertPharmacyVars.add(p.getPharmacyName());
+		insertPharmacyVars.add(p.getPharmacyAddress());
+		Long newPharmacyId = (Long) insertIntoDatabase(insertPharmacyQuery, insertPharmacyVars).get(0);
+
+		String updatePrescriptionQuery = "UPDATE prescription SET fill_date = CURRENT_DATE WHERE rxid = ?";
+		ArrayList<Object> updatePrescriptionVars = new ArrayList<>();
+		updatePrescriptionVars.add(p.getRxid());
+		insertIntoDatabase(updatePrescriptionQuery, updatePrescriptionVars);
+
+		String selectPrescriptionQuery = 	"SELECT prescription.rxid, doctor.ssn, doctor.name, " +
+											"patient.ssn, patient.name, drug.trade_name, prescription.quantity, " +
+											"prescription.fill_date, drug.price FROM prescription " +
+											"INNER JOIN doctor ON prescription.doctor_ssn = doctor.ssn " +
+											"INNER JOIN patient ON prescription.patient_ssn = patient.ssn " +
+											"INNER JOIN drug ON prescription.drug_name = drug.trade_name " +
+											"WHERE prescription.rxid = ?";
+		ArrayList<Object> selectPrescriptionVars = new ArrayList<>();
+		selectPrescriptionVars.add(p.getRxid());
+		ArrayList<Object> queryResult = getFromDatabase(selectPrescriptionQuery, selectPrescriptionVars);
+		System.out.println("oxy");
+		CachedRowSet result = (CachedRowSet) queryResult.get(0);
+		System.out.println(result.getString(3));
+
+
 		// temporary code to set fake data for pharmacy id, cost and date filled.
-		p.setPharmacyID("70012345");
-		p.setCost(String.format("%.2f", 12.5));
-		p.setDateFilled( new java.util.Date().toString() );
-		
+		p.setPharmacyID(newPharmacyId.toString());
+		p.setCost(String.format("%.2f", result.getDouble(9)));
+		p.setDateFilled( result.getString(8));
+		p.setDoctor_ssn(result.getString(2));
+		p.setDoctorName(result.getString(3));
+		p.setPatient_ssn(result.getString(4));
+		p.setPatientName(result.getString(5));
+		p.setDrugName(result.getString(6));
+		System.out.println(result.getString(7));
+		p.setQuantity(Integer.parseInt(result.getString(7)));
 		// display the updated prescription
-		
 		model.addAttribute("message", "Prescription has been filled.");
 		model.addAttribute("prescription", p);
 		return "prescription_show";
-
 	}
 	
 	/*
@@ -105,6 +139,85 @@ public class ControllerPrescription {
 	private Connection getConnection() throws SQLException {
 		Connection conn = jdbcTemplate.getDataSource().getConnection();
 		return conn;
+	}
+
+
+	public ArrayList<Object> getFromDatabase(String query, ArrayList<Object> queryVars) throws SQLException {
+
+		ArrayList<Object> queryResults = null;
+		PreparedStatement stmt;
+		try (Connection con = this.getConnection()){
+			stmt = con.prepareStatement(query);
+			int i = 1;
+			for (Object e : queryVars) {
+				if (e instanceof String) {
+					try {
+						stmt.setString(i, (String) e);
+					} catch (SQLException ex) {
+						ex.printStackTrace();
+					}
+				} else if (e instanceof Integer) {
+					try {
+						stmt.setInt(i, (Integer) e);
+					} catch (SQLException ex) {
+						ex.printStackTrace();
+					}
+				}
+				i++;
+			}
+			ResultSet results = stmt.executeQuery();
+			queryResults = new ArrayList<>();
+			RowSetFactory factory = RowSetProvider.newFactory();
+			CachedRowSet rowset = factory.createCachedRowSet();
+			rowset.populate(results);
+			rowset.next();
+			queryResults.add(rowset);
+//			while(rowset.next()) {
+//				queryResults.add(rowset);
+//			}
+		} catch(Exception e) {
+			System.out.println(e);
+		} finally {
+
+		}
+		return queryResults;
+	}
+
+	public ArrayList<Object> insertIntoDatabase(String query, ArrayList<Object> queryVars) throws SQLException {
+
+		ArrayList<Object> queryResults = null;
+		PreparedStatement stmt;
+		try (Connection con = this.getConnection()){
+			stmt = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+			int i = 1;
+			for (Object e : queryVars) {
+				if (e instanceof String) {
+					try {
+						stmt.setString(i, (String) e);
+					} catch (SQLException ex) {
+						ex.printStackTrace();
+					}
+				} else if (e instanceof Integer) {
+					try {
+						stmt.setInt(i, (Integer) e);
+					} catch (SQLException ex) {
+						ex.printStackTrace();
+					}
+				}
+				i++;
+			}
+			queryResults = new ArrayList<>();
+			int rowsAffected = stmt.executeUpdate();
+			ResultSet generatedKeys = stmt.getGeneratedKeys();
+			if (generatedKeys.next()) {
+				System.out.println(generatedKeys.getLong(1));
+				Long tempLong = generatedKeys.getLong(1);
+				queryResults.add(tempLong);
+			}
+		} catch(Exception e) {
+			System.out.println(e);
+		}
+		return queryResults;
 	}
 	
 }

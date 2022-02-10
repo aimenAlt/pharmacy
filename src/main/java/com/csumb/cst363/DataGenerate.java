@@ -72,7 +72,7 @@ public class DataGenerate {
 	  		
 	  		gen = new Random(System.currentTimeMillis());
 			
-			try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/project1", "root", "Guacaholic777");) {
+			try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/project1", "root", "testing123");) {
 					
 				counter++;
 				
@@ -116,30 +116,30 @@ public class DataGenerate {
 			
 	  		gen = new Random(System.currentTimeMillis());
 	  		
-			try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/project1", "root", "Guacaholic777");) {
-				
+			try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/project1", "root", "testing123");) {
+
 				counter++;
-				
+
 				//primary id generator
 				ps = con.prepareStatement("select doctor_id from doctor order by rand() limit 1");
 				rs = ps.executeQuery();
 				rs.next();
 				tempString = rs.getString(1);
 
-				ps = con.prepareStatement("insert into patient(ssn, name, birthdate, street, city, state, zipcode, primary_id) values(?, ?, ?, ?, ?, ?, ?, ?)", 
+				ps = con.prepareStatement("insert into patient(ssn, name, birthdate, street, city, state, zipcode, primary_id) values(?, ?, ?, ?, ?, ?, ?, ?)",
 						Statement.RETURN_GENERATED_KEYS);
 				ps.setString(8, tempString);
-				
+
 				//ssn generator
 				tempInt = gen.nextInt((maxSSN - minSSN) + 1) + minSSN;
 				tempString = String.valueOf(tempInt);
 				ps.setString(1, tempString);
-				
+
 				//name generator
 				randomFirstName = firstNames[gen.nextInt(firstNames.length)];
 				randomLastName = lastNames[gen.nextInt(lastNames.length)];
 				ps.setString(2, randomFirstName+" "+randomLastName);
-			
+
 		  		//birthdate  generator
 			  	simpleDateFormat = new SimpleDateFormat("YYYY-MM-dd");
 				tempCal = Calendar.getInstance(); //had to change from "instance"
@@ -150,33 +150,33 @@ public class DataGenerate {
 				tempDate = new Date(tempCal.getTimeInMillis());
 				random_date = simpleDateFormat.format(tempDate);
 				ps.setString(3, random_date);
-	
+
 				//street generator
 				tempInt = gen.nextInt((maxStreet - minStreet) + 1) + minStreet;
 				tempString = String.valueOf(tempInt);
 				randomStreet = streets[gen.nextInt(streets.length)];
 				ps.setString(4, tempString+" "+randomStreet);
-				
+
 				//city generator
 				randomCity = cities[gen.nextInt(cities.length)];
 				ps.setString(5, randomCity);
-				
+
 				//state generator
 				randomState = states[gen.nextInt(states.length)];
 				ps.setString(6, randomState);
-				
+
 				//zipcode generator
 				tempInt = gen.nextInt((maxZip - minZip) + 1) + minZip;
 				tempString = String.valueOf(tempInt);
 				ps.setString(7, tempString);
-				
+
 				ps.executeUpdate();
 
-				
+
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
 				counter--;
-				
+
 				//failsafe in case randomizer is failing to make unique SSNs
 				failure++;
 				if (failure > 1000) {
@@ -193,7 +193,7 @@ public class DataGenerate {
 			
 	  		gen = new Random(System.currentTimeMillis());
 	  		
-			try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/project1", "root", "Guacaholic777");) {
+			try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/project1", "root", "testing123");) {
 				
 				counter++;
 				
@@ -216,17 +216,18 @@ public class DataGenerate {
 				tempString3 = rs.getString(1);
 
 				//prepare insert statement
-				ps = con.prepareStatement("insert into prescription(quantity, patient_ssn, doctor_ssn, drug_name) values(?, ?, ?, ?)", 
+				ps = con.prepareStatement("insert into prescription(quantity, patient_ssn, doctor_ssn, drug_name, request_date) values(?, ?, ?, ?, ?)",
 						Statement.RETURN_GENERATED_KEYS);
 				
 				ps.setString(2, tempString);
 				ps.setString(3, tempString2);
 				ps.setString(4, tempString3);
-				
+				ps.setString(5, generateRandomDate());
+
 				//quantity generator
 				tempInt = gen.nextInt((maxQuantity - minQuantity) + 1) + minQuantity;
 				tempString = String.valueOf(tempInt);
-				ps.setString(1, tempString + " mg");
+				ps.setString(1, tempString);
 				
 				ps.executeUpdate();
 
@@ -241,4 +242,16 @@ public class DataGenerate {
 	  	System.exit(0);
 	  	
 	}
+
+	static String generateRandomDate() {
+		int year = randomNumberFromRange(2000, 2022);
+		int month = randomNumberFromRange(1, 12);
+		int day = randomNumberFromRange(1, 28);
+		return year +"-" + month + "-" + day;
+	}
+
+	static int randomNumberFromRange(int min, int max) {
+		return (int) ((Math.random() * (max - min)) + min);
+	}
+
 }
