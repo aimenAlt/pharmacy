@@ -89,7 +89,15 @@ public class ControllerPrescription {
 		 * replace the following with code to validate the updated prescription data
 		 * and update database.
 		 */
-		String insertPharmacyQuery = "INSERT INTO pharmacy (pharmacy_name, pharmacy_address) VALUES (?,?)";
+		ArrayList<Object> validationResult = validatePrescriptionVals(p);
+		boolean validPrescription = (boolean) validationResult.get(0);
+		String invalidMessage = (String) validationResult.get(1);
+		if(!validPrescription) {
+			model.addAttribute("message", invalidMessage);
+			model.addAttribute("prescription", p);
+			return "prescription_fill";
+		}
+		String insertPharmacyQuery = "INSERT INTO pharmacy (pharmacy_name, street) VALUES (?,?)";
 		ArrayList<Object> insertPharmacyVars = new ArrayList<>();
 		insertPharmacyVars.add(p.getPharmacyName());
 		insertPharmacyVars.add(p.getPharmacyAddress());
@@ -219,5 +227,49 @@ public class ControllerPrescription {
 		}
 		return queryResults;
 	}
-	
+
+	public ArrayList<Object> validatePrescriptionVals(Prescription prescription) {
+		ArrayList<Object> returningData = new ArrayList<Object>();
+		returningData.add(true);
+		returningData.add("");
+		if(!validateRxid(prescription.getRxid())) {
+			returningData.set(0, false);
+			returningData.set(1, "Error: Invalid RXid");
+		} else if(!validateName(prescription.getPatientName())) {
+			returningData.set(0, false);
+			returningData.set(1, "Error: Invalid patient name");
+		} else if(!validateName(prescription.getPharmacyName())) {
+			returningData.set(0, false);
+			returningData.set(1, "Error: Invalid pharmacy name");
+		} else if(!validateAddress(prescription.getPharmacyAddress())) {
+			returningData.set(0, false);
+			returningData.set(1, "Error: Invalid pharmacy address");
+		}
+		return returningData;
+	}
+
+	public boolean validateRxid(String rxid) {
+		try {
+			Integer.parseInt(rxid);
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+
+	public boolean validateName(String name) {
+		char[] chars = name.toCharArray();
+		for(char c : chars){
+			if(Character.isDigit(c)){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static boolean validateAddress(String address) {
+		return address.matches(
+				"\\d+\\s+([a-zA-Z]+|[a-zA-Z]+\\s[a-zA-Z]+)" );
+	}
+
 }

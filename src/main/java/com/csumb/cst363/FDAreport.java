@@ -1,6 +1,9 @@
 package com.csumb.cst363;
 
 import java.sql.*;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -18,13 +21,32 @@ public class FDAreport {
         String drugName = "";
         String startDate = "";
         String endDate = "";
+        boolean valid = false;
         Scanner scan = new Scanner(System.in);
         System.out.println("Please input the drug name");
-        drugName = getStringInput(scan);
+        while(true) {
+            drugName = getStringInput(scan);
+            if(validateName(drugName)) break;
+            else {
+                System.out.println("Invalid name. Please input proper drug name");
+            }
+        }
         System.out.println("Please input the start date for your search: (Format: YYYY-MM-DD)");
-        startDate = getStringInput(scan);
+        while(true) {
+            startDate = getStringInput(scan);
+            if(validateDate(startDate)) break;
+            else {
+                System.out.println("Invalid Date. Please input proper start date");
+            }
+        }
         System.out.println("Please input the end date for your search: (Format: YYYY-MM-DD)");
-        endDate = getStringInput(scan);
+        while(true) {
+            endDate = getStringInput(scan);
+            if(validateDate(endDate)) break;
+            else {
+                System.out.println("Invalid Date. Please input proper end date");
+            }
+        }
         getFromDatabase(drugName, startDate, endDate);
     }
 
@@ -66,12 +88,29 @@ public class FDAreport {
             }
         } catch(Exception e) {
             System.out.println(e);
-        } finally {
-
         }
     }
 
+    public static boolean validateDate(String date) {
+        try {
+            DateFormat df = new SimpleDateFormat(date);
+            df.setLenient(false);
+            df.parse(date);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
+    public static boolean validateName(String name) {
+        char[] chars = name.toCharArray();
+        for(char c : chars){
+            if(Character.isDigit(c)){
+                return false;
+            }
+        }
+        return true;
+    }
 
 }
 
