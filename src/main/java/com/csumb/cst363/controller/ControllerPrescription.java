@@ -83,8 +83,6 @@ public class ControllerPrescription {
 	public String processFillForm(Prescription p, Model model) throws SQLException {
 
 
-		// TODO
-
 		String selectRxidQuery = 	"SELECT rxid FROM prescription WHERE rxid = ?";
 		ArrayList<Object> selectRxidVars = new ArrayList<>();
 		selectRxidVars.add(p.getRxid());
@@ -99,13 +97,6 @@ public class ControllerPrescription {
 			return "prescription_fill";
 		}
 
-
-
-
-		/* 
-		 * replace the following with code to validate the updated prescription data
-		 * and update database.
-		 */
 		ArrayList<Object> validationResult = validatePrescriptionVals(p);
 		boolean validPrescription = (boolean) validationResult.get(0);
 		String invalidMessage = (String) validationResult.get(1);
@@ -137,18 +128,7 @@ public class ControllerPrescription {
 		ArrayList<Object> selectPrescriptionVars = new ArrayList<>();
 		selectPrescriptionVars.add(p.getRxid());
 		ArrayList<Object> queryResult = getFromDatabase(selectPrescriptionQuery, selectPrescriptionVars);
-//		try {
-//			CachedRowSet result = (CachedRowSet) queryResult.get(0);
-//		} catch(Exception e) {
-//			model.addAttribute("message", "Error: RXID does not exist");
-//			model.addAttribute("prescription", p);
-//			return "prescription_fill";
-//		}
 		CachedRowSet result = (CachedRowSet) queryResult.get(0);
-		System.out.println(result.getString(3));
-
-
-		// temporary code to set fake data for pharmacy id, cost and date filled.
 		p.setPharmacyID(newPharmacyId.toString());
 		p.setCost(String.format("%.2f", result.getDouble(9)));
 		p.setDateFilled( result.getString(8));
