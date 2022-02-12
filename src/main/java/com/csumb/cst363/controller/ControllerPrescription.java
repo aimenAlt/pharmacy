@@ -161,23 +161,7 @@ public class ControllerPrescription {
 		PreparedStatement stmt;
 		try (Connection con = this.getConnection()){
 			stmt = con.prepareStatement(query);
-			int i = 1;
-			for (Object e : queryVars) {
-				if (e instanceof String) {
-					try {
-						stmt.setString(i, (String) e);
-					} catch (SQLException ex) {
-						ex.printStackTrace();
-					}
-				} else if (e instanceof Integer) {
-					try {
-						stmt.setInt(i, (Integer) e);
-					} catch (SQLException ex) {
-						ex.printStackTrace();
-					}
-				}
-				i++;
-			}
+			insertQueryVars(queryVars, stmt);
 			ResultSet results = stmt.executeQuery();
 			queryResults = new ArrayList<>();
 			RowSetFactory factory = RowSetProvider.newFactory();
@@ -190,8 +174,6 @@ public class ControllerPrescription {
 //			}
 		} catch(Exception e) {
 			System.out.println(e);
-		} finally {
-
 		}
 		return queryResults;
 	}
@@ -202,23 +184,7 @@ public class ControllerPrescription {
 		PreparedStatement stmt;
 		try (Connection con = this.getConnection()){
 			stmt = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-			int i = 1;
-			for (Object e : queryVars) {
-				if (e instanceof String) {
-					try {
-						stmt.setString(i, (String) e);
-					} catch (SQLException ex) {
-						ex.printStackTrace();
-					}
-				} else if (e instanceof Integer) {
-					try {
-						stmt.setInt(i, (Integer) e);
-					} catch (SQLException ex) {
-						ex.printStackTrace();
-					}
-				}
-				i++;
-			}
+			insertQueryVars(queryVars, stmt);
 			queryResults = new ArrayList<>();
 			int rowsAffected = stmt.executeUpdate();
 			ResultSet generatedKeys = stmt.getGeneratedKeys();
@@ -231,6 +197,26 @@ public class ControllerPrescription {
 			System.out.println(e);
 		}
 		return queryResults;
+	}
+
+	private void insertQueryVars(ArrayList<Object> queryVars, PreparedStatement stmt) {
+		int i = 1;
+		for (Object e : queryVars) {
+			if (e instanceof String) {
+				try {
+					stmt.setString(i, (String) e);
+				} catch (SQLException ex) {
+					ex.printStackTrace();
+				}
+			} else if (e instanceof Integer) {
+				try {
+					stmt.setInt(i, (Integer) e);
+				} catch (SQLException ex) {
+					ex.printStackTrace();
+				}
+			}
+			i++;
+		}
 	}
 
 	public ArrayList<Object> validatePrescriptionVals(Prescription prescription) {
